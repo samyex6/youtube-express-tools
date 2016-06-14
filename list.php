@@ -20,8 +20,8 @@ function sendMail($to, $title, $content) {
     $mail->SMTPSecure = 'ssl'; // secure transfer enabled REQUIRED for Gmail
     $mail->Host       = "smtp.gmail.com";
     $mail->Port       = 465; // or 587
-    $mail->Username   = "pokeuniv@gmail.com";
-    $mail->Password   = "dwpyk5rz";
+    $mail->Username   = "";
+    $mail->Password   = "";
 
     if(!$mail->send()) {
         return "Mailer Error: " . $mail->ErrorInfo;
