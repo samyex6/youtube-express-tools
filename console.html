@@ -1,0 +1,98 @@
+<html ng-app="youtube">
+<head>
+    <style>
+        * { font-size: 12px; }
+        table { margin: 0 auto; }
+        td, th { border-collapse: collapse; border: 1px solid #e3e3ef; text-align: center; padding: 10px; }
+    </style>
+</head>
+<body ng-controller="showVideoList">
+    <div ng-if="redirect_url">You need to authenticate first: <a ng-href="{{ redirect_url }}" target="_blank">Click me</a></div>
+    <div ng-if="error"><font color="red">{{ error }}</font></div>
+    <div ng-if="mail_status"><font color="blue">{{ mail_status }}</font></div>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Channel</th>
+            <th>Date</th>
+            <th>Link</th>
+            <th>Status</th>
+        </tr>
+        <tr ng-repeat="video in videos track by video.time">
+            <td>{{ video.id }}</td>
+            <td>{{ video.title }}</td>
+            <th>{{ video.channel }}</td>
+            <td>{{ video.time * 1000 | date }}</td>
+            <td><a ng-href="https://www.youtube.com/watch?v={{ video.id }}" target="_blank">Click me</a></td>
+            <td><font color="red">{{ !video.is_old && 'New!' || ''}}</font></td>
+        <tr>
+    </table>
+            
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (Notification.permission !== "granted")
+                Notification.requestPermission();
+        });
+
+        var app         = angular.module('youtube', []);
+        var is_first    = true;
+        var alarm_sound = new Audio('alarm.mp3');
+        app.controller('showVideoList', ['$scope', '$interval', '$http', function($scope, $interval, $http) {
+            $scope.videos = [];
+            $interval(function() {
+                $http.get('list.php').success(function(response) {
+                    if(response.url) {
+                        $scope.redirect_url = response.url;
+                        return;
+                    } else if(response.error) {
+                        $scope.error = response.error;
+                        return;
+                    } else {
+                        if(response.mail_status) {
+                            $scope.mail_status = response.mail_status;
+                        }
+                        response = response.videos;
+                        if(response instanceof Array) {
+                            if(!is_first) {
+                                for(i in response) {
+                                    response[i].is_old = false;
+                                    for(j in $scope.videos) {
+                                        if($scope.videos[j].is_old && $scope.videos[j].id === response[i].id) {
+                                            response[i].is_old = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                for(i in response) {
+                                    if(!response[i].is_old) {
+                                        var notification = new Notification('Boom', {
+                                            body: "Hey! Go and check out some new youtube videos!",
+                                        });
+                                        alarm_sound.play();
+                                        break;
+                                    }
+                                }
+                            } else {
+                                for(i in response) {
+                                    response[i].is_old = true;
+                                }
+                                is_first = false;
+                            }
+                            response.sort(function(a, b) {
+                                return b.time - a.time;
+                            });
+                            $scope.videos = response;
+                        }
+                        $scope.redirect_url = $scope.error = '';
+                    }
+                    
+                });
+            }, 22222);
+        }]);
+    </script>
+</body>
+</html>
